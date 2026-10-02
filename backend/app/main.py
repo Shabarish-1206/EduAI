@@ -1,0 +1,61 @@
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from app.core.config import settings
+from app.db.database import engine, Base
+from app.api import code_explainer
+# Import all models so SQLAlchemy knows about them
+# This must happen BEFORE create_all
+from app.models import user, college, academic, notes, career, roadmap, events, vault
+
+# Import routers
+from app.api.routes import auth, colleges, academic, notes, code_explainer, content, career, chat, roadmap, vault, notifications
+
+# Create all tables in database automatically
+Base.metadata.create_all(bind=engine)
+import os
+os.makedirs("generated_files", exist_ok=True)
+os.makedirs("vault_files", exist_ok=True)
+app = FastAPI(
+    title=settings.APP_NAME,
+    version=settings.APP_VERSION,
+    description="AI-Powered Academic & Career Platform"
+)
+
+# CORS — allows React frontend to talk to this backend
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# ─────────────────────────────────────────
+# REGISTER ALL ROUTERS
+# ─────────────────────────────────────────
+app.include_router(auth.router)
+app.include_router(colleges.router)
+app.include_router(academic.router)
+app.include_router(notes.router)
+app.include_router(code_explainer.router)
+app.include_router(content.router)
+app.include_router(career.router)
+app.include_router(chat.router)
+app.include_router(roadmap.router)
+app.include_router(vault.router)
+app.include_router(notifications.router)
+# ─────────────────────────────────────────
+# BASE ROUTES
+# ─────────────────────────────────────────
+@app.get("/")
+async def root():
+    return {
+        "app": settings.APP_NAME,
+        "status": "running",
+        "version": settings.APP_VERSION
+    }
+
+@app.get("/health")
+async def health():
+    return {"status": "healthy"}
+app.include_router(code_explainer.router)
